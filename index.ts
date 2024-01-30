@@ -2,13 +2,24 @@
 
 import { parseArgs } from "util";
 import logUpdate from "log-update";
+import * as nodemailer from "nodemailer";
 
-const { values, positionals } = parseArgs({
+const transporter: nodemailer.Transporter = nodemailer.createTransport({
+  host: "mailpit",
+  port: 1025,
+  secure: false,
+  auth: {
+    user: 'user',
+    pass: 'pass'
+  }
+});
+
+const { values } = parseArgs({
   args: Bun.argv,
   options: {
     senders: {
       type: "string",
-      default: "1"
+      default: "10"
     },
     interval: {
       type: "string",
@@ -19,8 +30,6 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
 });
 
-// console.log(values);
-// console.log(positionals);
 
 type Sender = {
   count: number
@@ -34,7 +43,7 @@ let stats: {
   senders: {}
 };
 
-const SendersCount = parseInt(values.senders || "1", 10);
+const SendersCount = parseInt(values.senders || "10", 10);
 const RandomInterval = parseInt(values.interval || "250", 10)
 // console.log(SendersCount, RandomInterval);
 
@@ -43,8 +52,14 @@ function sender(index: number) {
     count: 0
   };
 
-  var sendEmail: () => void = () => {
+  var sendEmail: () => void = async () => {
     stats.senders[index].count++;
+    await transporter.sendMail({
+      from: `"Sender #${index}" <sender-${index}@localhost>`,
+      to: "rcpt@localhost",
+      subject: `Hello #${index} - ${stats.senders[index].count}`,
+      text: `Hello #${index} - ${stats.senders[index].count}`
+    });
     setTimeout(sendEmail, Math.floor(Math.random() * RandomInterval));
   };
 

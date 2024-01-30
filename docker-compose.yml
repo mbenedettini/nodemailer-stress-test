@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  email-stress:
+    build:
+      context: .
+    # ports:
+    #   - "3000:3000"  # Adjust the port if your Node.js app uses a different one
+    depends_on:
+      - mailhog
+      - mailpit
+    volumes:
+      - ".:/app"
+    networks:
+      - network
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8026:8026"  # MailHog web UI port
+      - "1026:1026"  # MailHog SMTP port
+    networks:
+      - network
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      - MP_SMTP_AUTH_ACCEPT_ANY=true
+      - MP_QUIET=true
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
+    networks:
+      - network
+
+networks:
+  network:
+    driver: bridge
