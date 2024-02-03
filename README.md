@@ -13,3 +13,17 @@ bun run index.ts
 ```
 
 This project was created using `bun init` in bun v1.0.25. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+
+
+# Docker image
+
+```bash
+docker build -t marianobe/nodemailer-stress-test .
+docker push marianobe/nodemailer-stress-test
+```
+
+# Docker usage example:
+
+```bash
+$ docker run -e SENDERS=14 -e INTERVAL=10  -e PARAGRAPHS=100  -e HOST=host.docker.internal -e PORT=1025 marianobe/nodemailer-stress-test
+```

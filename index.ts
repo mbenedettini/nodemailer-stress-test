@@ -7,8 +7,8 @@ import { faker } from '@faker-js/faker';
 
 
 const transporter: nodemailer.Transporter = nodemailer.createTransport({
-  host: "mailpit",
-  port: 1025,
+  host: process.env.HOST || "mailpit",
+  port: process.env.PORT || 1025,
   secure: false,
   auth: {
     user: 'user',
