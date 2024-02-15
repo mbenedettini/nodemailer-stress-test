@@ -1,4 +1,4 @@
-FROM debian:12.4
+FROM --platform=amd64 debian:12.4
 WORKDIR /app
 SHELL ["/bin/bash", "-o", "pipefail", "-ex", "-c"]
 #RUN set -o pipefail -ex

@@ -5,16 +5,34 @@ import logUpdate from "log-update";
 import * as nodemailer from "nodemailer";
 import { faker } from '@faker-js/faker';
 
+function generateRandomBinaryBuffer(sizeInKB: number): Buffer {
+  const sizeInBytes = sizeInKB * 1024;
+  const buffer = Buffer.alloc(sizeInBytes);
 
-const transporter: nodemailer.Transporter = nodemailer.createTransport({
-  host: process.env.HOST || "mailpit",
-  port: process.env.PORT || 1025,
-  secure: false,
-  auth: {
-    user: 'user',
-    pass: 'pass'
+  for (let i = 0; i < sizeInBytes; i++) {
+    // Fill the buffer with random bytes
+    buffer[i] = Math.floor(Math.random() * 256);
   }
-});
+
+  return buffer;
+}
+
+const transportConfig = {
+  host: process.env.HOST || "server",
+  port: parseInt(process.env.PORT) || 1025,
+  secure: false,
+  // auth: {
+  //   user: 'user',
+  //   pass: 'pass'
+  // },
+  pool: true,
+  maxConnections: 1000,
+  maxMessages: 10000
+};
+
+console.log(transportConfig);
+
+const transporter: nodemailer.Transporter = nodemailer.createTransport(transportConfig);
 
 const { values } = parseArgs({
   args: Bun.argv,
@@ -30,6 +48,10 @@ const { values } = parseArgs({
     paragraphs: {
       type: "string",
       default: "10"
+    },
+    attachmentSize: {
+      type: "string",
+      default: "0"
     }
   },
   strict: true,
@@ -56,12 +78,26 @@ let stats: {
 const SendersCount = parseInt(process.env.SENDERS || values.senders || "10", 10);
 const RandomInterval = parseInt(process.env.INTERVAL || values.interval || "250", 10)
 const MaxParagraphs = parseInt(process.env.PARAGRAPHS || values.paragraphs || "10", 10)
-console.log(`Current config: `, {SendersCount, RandomInterval, MaxParagraphs});
-console.log("");
+const AttachmentSize = parseInt(process.env.ATTACHMENT_SIZE || values.attachmentSize || "0", 10)
+console.log(`Current config: `, {SendersCount, RandomInterval, MaxParagraphs, AttachmentSize});
 
-// Allow random interval to give us at least 4 samples
-// to calculate speed
-const StatsInterval = RandomInterval * 4;
+let attachment: Buffer;
+if (AttachmentSize > 0) {
+  attachment = generateRandomBinaryBuffer(AttachmentSize);
+}
+
+const StatsInterval = 500;
+
+function getRandomNumber(min: number, max: number) {
+  // Generate a random number between 0 (inclusive) and 1 (exclusive)
+  const randomFraction = Math.random();
+
+  // Scale and shift the random fraction to the desired interval
+  const randomInRange = randomFraction * (max - min) + min;
+
+  // Return the result
+  return randomInRange;
+}
 
 function createSender(index: number) {
   stats.senders[index] = {
@@ -83,9 +119,10 @@ function createSender(index: number) {
       // subject: `Hello #${index} - ${stats.senders[index].count}`,
       subject: faker.lorem.sentence({ min: 3, max: 10}),
       // text: `Hello #${index} - ${stats.senders[index].count}`,
-      text
+      text,
+      ...(attachment ? { attachments: [{filename: "attachment1.jpg", content: attachment}] }: {})
     });
-    setTimeout(sendEmail, Math.floor(Math.random() * RandomInterval));
+    setTimeout(sendEmail, 0);
   };
 
   sendEmail();
@@ -99,7 +136,7 @@ for (let i = 0; i < SendersCount; i++) {
 }
 
 function printStats() {
-  let totalSpeed = 0;
+  let instantSpeed = 0;
   let totalBodySize = 0;
   let totalCount = 0;
 
@@ -115,8 +152,8 @@ function printStats() {
       sender.prevCount = sender.count;
 
       // Speed calc
-      const speed = diff * 1000 / StatsInterval;
-      totalSpeed += speed;
+      const speed = (diff * 1000) / StatsInterval;
+      instantSpeed += speed;
 
       // Totals and avg body size
       totalBodySize += sender.bodySize;
@@ -131,14 +168,20 @@ Avg body size: ${avgBodySize.toFixed(2)} kb.`);
     sendersMessage = msgs.join("\n");
   }
 
+  const elapsedSeconds = parseFloat(
+    (((new Date()).getTime() - startedAt.getTime()) / 1000)
+      .toFixed(2)
+  );
   const avgBodySize = totalCount > 0 ? totalBodySize / totalCount / 1024 : 0;
+  const avgSpeed = totalCount > 0 ? totalCount / elapsedSeconds: 0;
   const bodyThroughput = (totalBodySize - stats.totalBodySize) / 1024 / 1024 * 1000 / StatsInterval;
   stats.totalBodySize = totalBodySize;
-  const elapsedSeconds = Math.round(((new Date()).getTime() - startedAt.getTime()) / 1000);
 
   const statsMessage = `Nodemailer stress test running \n
 ${sendersMessage}
-Total speed: ${totalSpeed} msg/s
+Total sent messages: ${totalCount}
+Instant speed: ${instantSpeed} msg/s
+Avg speed: ${avgSpeed.toFixed(2)} msg/s
 Avg body size: ${avgBodySize.toFixed(2)} kb
 Body throughput: ${bodyThroughput.toFixed(2)} mb/s
 Elapsed seconds: ${elapsedSeconds}
@@ -148,4 +191,4 @@ Elapsed seconds: ${elapsedSeconds}
   //console.log(statsMessage);
 }
 
-setInterval(printStats, 500);
+setInterval(printStats, StatsInterval);

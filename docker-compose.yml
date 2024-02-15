@@ -6,35 +6,54 @@ services:
       context: .
     # ports:
     #   - "3000:3000"  # Adjust the port if your Node.js app uses a different one
-    depends_on:
-      - mailhog
-      - mailpit
+    links:
+      # - mailhog
+      # - mailpit
+      - server
     volumes:
       - ".:/app"
     networks:
       - network
     environment:
-      - SENDERS=20
-      - INTERVAL=10 # ms
-      - PARAGRAPHS=100
+      - SENDERS=10
+      - INTERVAL=2 # ms
+      - PARAGRAPHS=2
+      - ATTACHMENT_SIZE=1000
+      - HOST=mailpit
+      - PORT=1026
+      # - HOST=server
+      # - PORT=1025
 
-  mailhog:
-    image: mailhog/mailhog
+
+  server:
+    build:
+      context: .
     ports:
-      - "8026:8026"  # MailHog web UI port
-      - "1026:1026"  # MailHog SMTP port
+      - "1025:1025"
+    volumes:
+      - ".:/app"
     networks:
       - network
+    command: /root/.bun/bin/bun run server.ts
+
+  # mailhog:
+  #   image: mailhog/mailhog
+  #   ports:
+  #     - "8026:8026"  # MailHog web UI port
+  #     - "1026:1026"  # MailHog SMTP port
+  #   networks:
+  #     - network
 
   mailpit:
     image: axllent/mailpit
     ports:
       - "8025:8025"
-      - "1025:1025"
+      - "1026:1026"
     environment:
       - MP_SMTP_AUTH_ACCEPT_ANY=true
       - MP_QUIET=true
       - MP_SMTP_AUTH_ALLOW_INSECURE=true
+      - MP_SMTP_BIND_ADDR=0.0.0.0:1026
     networks:
       - network
 

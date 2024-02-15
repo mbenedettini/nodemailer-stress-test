@@ -27,3 +27,15 @@ docker push marianobe/nodemailer-stress-test
 ```bash
 $ docker run -e SENDERS=14 -e INTERVAL=10  -e PARAGRAPHS=100  -e HOST=host.docker.internal -e PORT=1025 marianobe/nodemailer-stress-test
 ```
+
+# Mailpit
+```bash
+$ docker run -p 8025:8025 \
+-p 1025:1025 \
+axllent/mailpit
+```
+
+# Custom Server
+```bash
+$ docker run -p 1025:1025 marianobe/nodemailer-stress-test /root/.bun/bin/bun run server.ts
+```
