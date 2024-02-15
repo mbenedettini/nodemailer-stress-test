@@ -17,23 +17,6 @@ function generateRandomBinaryBuffer(sizeInKB: number): Buffer {
   return buffer;
 }
 
-const transportConfig = {
-  host: process.env.HOST || "server",
-  port: parseInt(process.env.PORT) || 1025,
-  secure: false,
-  // auth: {
-  //   user: 'user',
-  //   pass: 'pass'
-  // },
-  pool: true,
-  maxConnections: 1000,
-  maxMessages: 10000
-};
-
-console.log(transportConfig);
-
-const transporter: nodemailer.Transporter = nodemailer.createTransport(transportConfig);
-
 const { values } = parseArgs({
   args: Bun.argv,
   options: {
@@ -52,6 +35,10 @@ const { values } = parseArgs({
     attachmentSize: {
       type: "string",
       default: "0"
+    },
+    localAddress: {
+      type: "string",
+      default: ""
     }
   },
   strict: true,
@@ -76,10 +63,29 @@ let stats: {
 };
 
 const SendersCount = parseInt(process.env.SENDERS || values.senders || "10", 10);
-const RandomInterval = parseInt(process.env.INTERVAL || values.interval || "250", 10)
-const MaxParagraphs = parseInt(process.env.PARAGRAPHS || values.paragraphs || "10", 10)
-const AttachmentSize = parseInt(process.env.ATTACHMENT_SIZE || values.attachmentSize || "0", 10)
-console.log(`Current config: `, {SendersCount, RandomInterval, MaxParagraphs, AttachmentSize});
+const RandomInterval = parseInt(process.env.INTERVAL || values.interval || "250", 10);
+const MaxParagraphs = parseInt(process.env.PARAGRAPHS || values.paragraphs || "10", 10);
+const AttachmentSize = parseInt(process.env.ATTACHMENT_SIZE || values.attachmentSize || "0", 10);
+const LocalAddress = process.env.LOCAL_ADDRESS || values.localAddress;
+console.log(`Current config: `, {SendersCount, RandomInterval, MaxParagraphs, AttachmentSize, LocalAddress});
+
+const transportConfig = {
+  host: process.env.HOST || "server",
+  port: parseInt(process.env.PORT || "0") || 1025,
+  secure: false,
+  // auth: {
+  //   user: 'user',
+  //   pass: 'pass'
+  // },
+  pool: true,
+  maxConnections: 1000,
+  maxMessages: 10000,
+  ...(LocalAddress ? {localAddress: LocalAddress} : {})
+};
+
+console.log(transportConfig);
+
+const transporter: nodemailer.Transporter = nodemailer.createTransport(transportConfig);
 
 let attachment: Buffer;
 if (AttachmentSize > 0) {
