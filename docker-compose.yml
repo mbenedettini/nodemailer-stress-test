@@ -19,8 +19,8 @@ services:
       - INTERVAL=2 # ms
       - PARAGRAPHS=2
       - ATTACHMENT_SIZE=1000
-      - HOST=mailpit
-      - PORT=1026
+      - HOST=35.92.83.13
+      - PORT=1025
       # - HOST=server
       # - PORT=1025
 

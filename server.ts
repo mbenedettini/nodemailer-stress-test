@@ -9,6 +9,11 @@ const SMTPServer = require("smtp-server").SMTPServer;
 //   },
 // });
 
+process.on("SIGINT", () => {
+  console.log("Ctrl-C was pressed");
+  process.exit();
+});
+
 const server = new SMTPServer({
   disableReverseLookup: true,
   disabledCommands: ['STARTTLS', 'AUTH'],
@@ -21,6 +26,10 @@ const server = new SMTPServer({
       callback();
     });
   },
+  onConnect(session, callback) {
+    console.log(`Connection from ${session.remoteAddress}`);
+    return callback();
+  }
 });
 
 server.on("error", (err) => {

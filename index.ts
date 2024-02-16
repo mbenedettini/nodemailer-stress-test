@@ -1,9 +1,14 @@
 // console.log("Hello via Bun, motherfucker!");
 
-import { parseArgs } from "util";
+// import { parseArgs } from "util";
 import logUpdate from "log-update";
 import * as nodemailer from "nodemailer";
 import { faker } from '@faker-js/faker';
+
+process.on("SIGINT", () => {
+  console.log("Ctrl-C was pressed");
+  process.exit();
+});
 
 function generateRandomBinaryBuffer(sizeInKB: number): Buffer {
   const sizeInBytes = sizeInKB * 1024;
@@ -17,7 +22,7 @@ function generateRandomBinaryBuffer(sizeInKB: number): Buffer {
   return buffer;
 }
 
-const { values } = parseArgs({
+/* const { values } = parseArgs({
   args: Bun.argv,
   options: {
     senders: {
@@ -43,7 +48,7 @@ const { values } = parseArgs({
   },
   strict: true,
   allowPositionals: true,
-});
+}); */
 
 
 type Sender = {
@@ -62,11 +67,11 @@ let stats: {
   totalBodySize: 0
 };
 
-const SendersCount = parseInt(process.env.SENDERS || values.senders || "10", 10);
-const RandomInterval = parseInt(process.env.INTERVAL || values.interval || "250", 10);
-const MaxParagraphs = parseInt(process.env.PARAGRAPHS || values.paragraphs || "10", 10);
-const AttachmentSize = parseInt(process.env.ATTACHMENT_SIZE || values.attachmentSize || "0", 10);
-const LocalAddress = process.env.LOCAL_ADDRESS || values.localAddress;
+const SendersCount = parseInt(process.env.SENDERS || "10", 10);
+const RandomInterval = parseInt(process.env.INTERVAL || "250", 10);
+const MaxParagraphs = parseInt(process.env.PARAGRAPHS || "10", 10);
+const AttachmentSize = parseInt(process.env.ATTACHMENT_SIZE || "0", 10);
+const LocalAddress = process.env.LOCAL_ADDRESS;
 console.log(`Current config: `, {SendersCount, RandomInterval, MaxParagraphs, AttachmentSize, LocalAddress});
 
 const transportConfig = {
